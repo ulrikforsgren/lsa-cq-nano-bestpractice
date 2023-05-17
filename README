@@ -1,5 +1,10 @@
 make all start
-make cli-top
+make cli-mid-1
 config
-set services top-link test iface eth0 unit 33 vid 44 cfs-node mid-nso-1 rfs-node lower-nso-1 devices ex0
+set services mid-link test unit 33
+set services mid-link test vid 44
+set services mid-link test iface eth0
+set services mid-link test sleep 0
+set services mid-link test rfs-node lower-nso-1 sleep 0
+set services mid-link test rfs-node lower-nso-1 devices ex0 list-entries 0
 commit
