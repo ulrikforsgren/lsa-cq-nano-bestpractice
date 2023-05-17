@@ -1,0 +1,39 @@
+<config-template xmlns="http://tail-f.com/ns/config/1.0"
+                 xmlns:link="http://com/example/lower-link"
+                 servicepoint="lower-link-servicepoint"
+                 componenttype="lower-link:vlan-link"
+                 state="lower-link:config-devices">
+  <?set service_name={name}?>
+  <?set interface={iface}?>
+  <devices xmlns="http://tail-f.com/ns/ncs">
+    <?foreach {devices}?>
+      <device>
+        <name>{.}</name>
+        <config>
+          <sys xmlns="http://example.com/router">
+            <interfaces>
+              <interface tags="merge">
+                <name>{$interface}</name>
+                <?set-context-node {..}?>
+                <unit>
+                  <name>{unit}</name>
+                  <vlan-id>{vid}</vlan-id>
+                </unit>
+              </interface>
+            </interfaces>
+            <sys-val>
+              <service-entries>
+                <name>{$service_name}</name>
+                <?for i=1; {$i <= list-entries}; i={$i + 1}?>
+                  <entries>
+                    <name>entry_{$i}</name>
+                  </entries>
+                <?end ?>
+              </service-entries>
+            </sys-val>
+          </sys>
+        </config>
+      </device>
+    <?end ?>
+  </devices>
+</config-template>

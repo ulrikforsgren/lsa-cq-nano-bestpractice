@@ -1,0 +1,203 @@
+module top-link {
+  namespace "http://com/example/top-link";
+  prefix top-link;
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+  import tailf-kicker { prefix kicker; }
+  import tailf-common {
+    prefix tailf;
+  }
+  import tailf-ncs {
+    prefix ncs;
+  }
+
+  container actions {
+    tailf:action notify {
+      tailf:actionpoint notify;
+      input {
+        uses kicker:action-input-params;
+      }
+      output {
+      }
+    }
+  }
+
+  augment /ncs:services {
+    list top-link-data {
+      config false;
+      tailf:cdb-oper {
+        tailf:persistent true;
+      }
+      key name;
+      leaf name {
+        type string;
+      }
+      list cfs-node {
+        key name;
+        leaf name {
+          type leafref {
+            path "/ncs:devices/ncs:device/ncs:name";
+          }
+        }
+        leaf ready {
+          type boolean;
+          default false;
+        }
+      }
+    }
+    list top-link {
+      uses ncs:nano-plan-data;
+      uses ncs:service-data;
+      ncs:servicepoint top-link-servicepoint;
+
+      key name;
+      leaf name {
+        type string;
+      }
+
+      leaf unit {
+          type uint32;
+        }
+
+      leaf vid {
+          type uint32;
+        }
+
+      leaf iface {
+        type string;
+      }
+
+      leaf sleep {
+        type int32;
+        default 0;
+      }
+
+      list cfs-node {
+        key name;
+        leaf name {
+          type leafref {
+            path "/ncs:devices/ncs:device/ncs:name";
+          }
+        }
+
+        leaf sleep {
+          type int32;
+          default 0;
+        }
+
+        list rfs-node {
+          key name;
+          leaf name {
+            type string;
+          }
+
+          leaf sleep {
+            type int32;
+            default 0;
+          }
+
+          list devices {
+            key name;
+            leaf name {
+              type string;
+            }
+
+            leaf list-entries {
+              type int32;
+              default 0;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  identity cfs {
+    base ncs:plan-component-type;
+  }
+
+  identity dev-setup {
+    base ncs:plan-state;
+  }
+
+  identity add-cfs-config {
+      base ncs:plan-state;
+    }
+
+  ncs:plan-outline top-link-plan {
+    description
+      "Make before brake vlan plan";
+    ncs:self-as-service-status;
+    ncs:component-type "ncs:self" {
+      ncs:state "ncs:init"{
+        ncs:create {
+          ncs:nano-callback;
+        }
+        ncs:delete {
+          ncs:nano-callback;
+        }
+      }
+      ncs:state "ncs:ready"{
+        ncs:create {
+          ncs:nano-callback;
+        }
+        ncs:delete {
+          ncs:nano-callback;
+        }
+      }
+    }
+
+    ncs:component-type "top-link:cfs" {
+      ncs:state "ncs:init"{
+        ncs:create {
+          ncs:nano-callback;
+        }
+        ncs:delete {
+          ncs:pre-condition {
+            ncs:monitor "/ncs:services/top-link:top-link-data[name=$SNAME]" {
+              ncs:trigger-expr "count(cfs-node[name=$CFSNAME]) = 0";
+            }
+          }
+        }
+      }
+      ncs:state "top-link:add-cfs-config" {
+        ncs:create {
+          ncs:nano-callback;
+        }
+      }
+      ncs:state "ncs:ready" {
+        ncs:create {
+          ncs:pre-condition {
+            ncs:monitor "/ncs:services/top-link:top-link-data[name=$SERVICE/name]/cfs-node[name=$CFSNAME]" {
+              ncs:trigger-expr "ready = 'true'";
+            }
+          }
+        }
+      }
+    }
+  }
+
+  ncs:service-behavior-tree top-link-servicepoint {
+    ncs:plan-outline-ref top-link-plan;
+    ncs:selector {
+      ncs:create-component "'self'" {
+        ncs:component-type-ref "ncs:self";
+      }
+      ncs:variable "SNAME" {
+        ncs:value-expr "name";
+      }
+      ncs:multiplier {
+        ncs:foreach "cfs-node" {
+          ncs:variable "CFSNAME" {
+            ncs:value-expr "name";
+          }
+          ncs:create-component "name" {
+            ncs:component-type-ref "top-link:cfs";
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,137 @@
+module lower-link {
+  namespace "http://com/example/lower-link";
+  prefix lower-link;
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  import tailf-common {
+    prefix tailf;
+  }
+
+  import tailf-ncs {
+    prefix ncs;
+  }
+
+  augment /ncs:services {
+    list lower-link {
+      description "This is an RFS skeleton service";
+
+      uses ncs:nano-plan-data;
+      uses ncs:service-data;
+      ncs:servicepoint lower-link-servicepoint;
+
+      key name;
+      leaf name {
+        type string;
+      }
+
+      leaf unit {
+        mandatory true;
+        type uint32;
+      }
+
+      leaf vid {
+        mandatory true;
+        type uint32;
+      }
+
+      leaf iface {
+        type string;
+      }
+
+      leaf sleep {
+        type int32;
+        default 0;
+      }
+
+      list devices {
+        key name;
+        leaf name {
+          type string;
+        }
+
+        leaf list-entries {
+          type int32;
+          default 0;
+        }
+      }
+    }
+  }
+
+  identity vlan-link {
+    base ncs:plan-component-type;
+  }
+  identity config-devices {
+      base ncs:plan-state;
+    }
+
+  ncs:plan-outline lower-link-plan {
+    ncs:self-as-service-status;
+    ncs:component-type "ncs:self" {
+      ncs:state "ncs:init"{
+        ncs:create {
+          ncs:nano-callback;
+        }
+        ncs:delete {
+          ncs:nano-callback;
+        }
+      }
+      ncs:state "ncs:ready"{
+        ncs:create {
+          ncs:nano-callback;
+        }
+        ncs:delete {
+          ncs:nano-callback;
+        }
+      }
+    }
+
+    ncs:component-type "lower-link:vlan-link" {
+      ncs:state "ncs:init"{
+        ncs:delete {
+          ncs:nano-callback;
+          ncs:pre-condition {
+            ncs:monitor "$ZOMBIE/commit-queue" {
+              ncs:trigger-expr "count(queue-item) = 0";
+            }
+          }
+        }
+      }
+      ncs:state "lower-link:config-devices" {
+        ncs:create {
+          ncs:nano-callback;
+          ncs:force-commit;
+        }
+        ncs:delete {
+          ncs:force-commit;
+        }
+      }
+      ncs:state "ncs:ready" {
+        ncs:create {
+          ncs:pre-condition {
+            ncs:monitor "$SERVICE/commit-queue" {
+              ncs:trigger-expr "count(queue-item) = 0";
+            }
+          }
+        }
+      }
+    }
+  }
+  ncs:service-behavior-tree lower-link-servicepoint {
+    ncs:plan-outline-ref lower-link-plan;
+    ncs:selector {
+      ncs:create-component "'self'" {
+        ncs:component-type-ref "ncs:self";
+      }
+      ncs:multiplier {
+        ncs:foreach "devices" {
+          ncs:create-component "name" {
+            ncs:component-type-ref "lower-link:vlan-link";
+          }
+        }
+      }
+    }
+  }
+}

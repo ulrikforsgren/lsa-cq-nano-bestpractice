@@ -1,0 +1,5 @@
+make all start
+make cli-top
+config
+set services top-link test iface eth0 unit 33 vid 44 cfs-node mid-nso-1 rfs-node lower-nso-1 devices ex0
+commit
