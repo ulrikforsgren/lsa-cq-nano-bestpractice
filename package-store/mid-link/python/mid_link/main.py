@@ -1,11 +1,29 @@
 # -*- mode: python; python-indent: 4 -*-
 import ncs
+import _ncs
 from ncs.maapi import Maapi
-from ncs.application import NanoService
+from ncs.application import NanoService, Service
 from ncs.dp import Action
 import time
 
 
+class MidLinkServiceCallbacks(Service):
+    @Service.pre_modification
+    def cb_pre_modification(self, tctx, op, kp, root, proplist):
+        #TODO: Can we use defined variables instead of numbers for op?
+        if op == _ncs.dp.NCS_SERVICE_CREATE:
+            service = str(kp).split('{')[1].split('}')[0]  #TODO: Is it possible to do this in a better way?
+            self.log.debug(f'Creating mid-link-data {service}')
+            root.ncs__services.mid_link_data.create(service)
+        #root.ncs__services.mid_link_data.create(service.name)
+    #/ncs:services/mid-link:mid-link{test-0}
+
+    @Service.post_modification
+    def cb_post_modification(self, tctx, op, kp, root, proplist):
+        if op == _ncs.dp.NCS_SERVICE_DELETE:
+            service = str(kp).split('{')[1].split('}')[0] #TODO: Is it possible to do this in a better way?
+            self.log.debug(f'Removing mid-link-data {service}')
+            del root.ncs__services.mid_link_data[service]
 class CreateKickers(NanoService):
     @NanoService.create
     def cb_nano_create(self, tctx, root, service, plan, component, state, proplist, compproplist):
@@ -44,8 +62,7 @@ class MidLinkNanoServiceCallbacks(NanoService):
             link.sleep = rfs.sleep
         self.log.info(f'Service created')
 
-
-class NanoServiceCallbackInit(NanoService):
+class NanoServiceCallbackInit(NanoService):    
     @NanoService.create
     def cb_nano_create(self, tctx, root, service, plan, component, state, proplist, compproplist):
         self.log.info(f'Creating Mid-link...')
@@ -89,17 +106,16 @@ class NotificationAction(Action):
             notification = root._get_node(input.path)
             service_name = re.search(r"('[^#]*')", notification.service).group().replace("'", "")
             if notification.operation == 'modified':
-                self.log.info(f"Adding mid link data for '{service_name}'...")
-                link_data = root.ncs__services.mid_link_data.create(service_name)
+                self.log.info(f"Setting '{device_name}' ready to True")
+                link_data = root.ncs__services.mid_link_data[service_name]
                 link_data_device = link_data.rfs_node.create(device_name)
                 link_data_device.ready = True
             elif notification.operation == 'deleted':
                 self.log.info(f"Removing mid link data for '{service_name}'...")
                 del root.services.mid_link_data[service_name].rfs_node[device_name]
-            params = t.get_params()
-            params.dry_run_native()
             return True
         except Exception as e:
+            self.log.error(e)
             return False
 
 
@@ -115,6 +131,7 @@ class Main(ncs.application.Application):
         # Service callbacks require a registration for a 'service point',
         # as specified in the corresponding data model.
         #
+        self.register_service('mid-link-servicepoint', MidLinkServiceCallbacks) 
         self.register_nano_service(servicepoint='mid-link-servicepoint', componenttype="mid-link:vlan-link", state="ncs:init", nano_service_cls=CreateKickers)
         self.register_nano_service(servicepoint='mid-link-servicepoint', componenttype="mid-link:vlan-link", state="mid-link:add-rfs-config", nano_service_cls=MidLinkNanoServiceCallbacks)
 
