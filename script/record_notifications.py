@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- mode: python; python-indent: 4 -*-
 
+import argparse
 import asyncio
 import csv
 from datetime import datetime
@@ -9,6 +10,16 @@ import sys
 
 import jsonrpc_api
 import restconf_api
+
+
+def parseArgs(args):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-o', type=str,
+                        help='logfile name')
+    parser.add_argument('-f', action='store_true', default=False,
+                        help='Log to file using scriptname as base for'+
+                             'log file name (unless -o is used).')
+    return parser.parse_args(args)
 
 
 async def setup_subscriptions(jsonrpc, subscriptions):
@@ -126,12 +137,16 @@ async def subscribe_for_notifications(client, q,
     await asyncio.wait(tasks)
 
 
-async def main():
-    log_filename = os.path.basename(sys.argv[0]).split('.')[0]+'.csv'
+async def main(args):
+    if args.o is not None:
+        log_filename = args.o
+    else:
+        log_filename = os.path.basename(sys.argv[0]).split('.')[0]+'.csv'
     client = restconf_api.get_client()
     q = asyncio.Queue()
     await subscribe_for_notifications(client, q, nodes=
                       ['localhost:8080', 'localhost:8081', 'localhost:8082'],
+                      log_file=args.f,
                       log_filename=log_filename)
 
     #TODO: Proper cleanup
@@ -139,4 +154,4 @@ async def main():
     await client.close()
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    asyncio.run(main(parseArgs(sys.argv[1:])))
