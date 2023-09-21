@@ -1,0 +1,10 @@
+#!/bin/sh
+set -e
+
+case "$2" in
+up)
+    ip route add 172.18.2.0/24 via 10.10.0.3
+	;;
+down)
+	;;
+esac

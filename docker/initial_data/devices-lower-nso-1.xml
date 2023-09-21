@@ -1,0 +1,86 @@
+<devices xmlns="http://tail-f.com/ns/ncs">
+   <device>
+     <name>ex0</name>
+     <address>192.168.0.4</address>
+     <port>12022</port>
+     <ssh>
+       <host-key>
+         <algorithm>ssh-ed25519</algorithm>
+         <key-data>ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMyNOWjiwKrFszyTSX7ZoTpKQrGqRTyPlmIwTwN2t/+F root@buildkitsandbox</key-data>
+       </host-key>
+       <host-key>
+         <algorithm>ssh-rsa</algorithm>
+         <key-data>ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCdB8Na07lbhJYRtSKCRtttU2guep8vbPmC5+1o8pEsvvIDCmbCCYfy2v/CmcU8fcX3PF5Ys8R+cSmDXMY28nNkxlNhO4rt8ph45g/iPLJ5grVcVuR94qYyWD+ukiqug2YqIEXpzDc0cnun31WHkFOePCiEZIdPZWW/PwsLqEKQNzCw6pOkiAXu+CUc7QXTI8onl2FYvsHPoQltv2NOzxttUFzuUUE0FvJ0m0Hj63reSLClUNB5jz7yhocROclrlpuWYQdMszRXfONVq0kyczvgi8KWLf7G+El6zNpbzVNb+dnKnq9MY8VqTbwVIDzJ7Gv5t2txW0Y2/PkuHy2vj+BDpe7a7pD2p9j05DFGqQQPAh8fS5vW5oZqh0JrgbRG/CciTfx7diuP+8OZcg/8rgbtkrn0NJVL99zMAc0YajtMJwAgNHcVbW/NVY4SjouxSZ7IKUilFghDZRwSlormW6ip7T3ActQfT9OCrjVutVSaXPFftlbBxLmLGy8yhZf/vo8= root@buildkitsandbox</key-data>
+       </host-key>
+     </ssh>
+     <ssh-algorithms>
+       <public-key>ssh-ed25519</public-key>
+       <public-key>ssh-rsa</public-key>
+     </ssh-algorithms>
+     <state>
+       <admin-state>unlocked</admin-state>
+     </state>
+     <authgroup>default</authgroup>
+     <device-type>
+       <netconf>
+         <ned-id xmlns:router-nc-1.0="http://tail-f.com/ns/ned-id/router-nc-1.0">router-nc-1.0:router-nc-1.0</ned-id>
+       </netconf>
+     </device-type>
+   </device>
+   <device>
+     <name>ex1</name>
+     <address>192.168.0.5</address>
+     <port>12022</port>
+     <ssh>
+       <host-key>
+         <algorithm>ssh-ed25519</algorithm>
+         <key-data>ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMyNOWjiwKrFszyTSX7ZoTpKQrGqRTyPlmIwTwN2t/+F root@buildkitsandbox</key-data>
+       </host-key>
+       <host-key>
+         <algorithm>ssh-rsa</algorithm>
+         <key-data>ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCdB8Na07lbhJYRtSKCRtttU2guep8vbPmC5+1o8pEsvvIDCmbCCYfy2v/CmcU8fcX3PF5Ys8R+cSmDXMY28nNkxlNhO4rt8ph45g/iPLJ5grVcVuR94qYyWD+ukiqug2YqIEXpzDc0cnun31WHkFOePCiEZIdPZWW/PwsLqEKQNzCw6pOkiAXu+CUc7QXTI8onl2FYvsHPoQltv2NOzxttUFzuUUE0FvJ0m0Hj63reSLClUNB5jz7yhocROclrlpuWYQdMszRXfONVq0kyczvgi8KWLf7G+El6zNpbzVNb+dnKnq9MY8VqTbwVIDzJ7Gv5t2txW0Y2/PkuHy2vj+BDpe7a7pD2p9j05DFGqQQPAh8fS5vW5oZqh0JrgbRG/CciTfx7diuP+8OZcg/8rgbtkrn0NJVL99zMAc0YajtMJwAgNHcVbW/NVY4SjouxSZ7IKUilFghDZRwSlormW6ip7T3ActQfT9OCrjVutVSaXPFftlbBxLmLGy8yhZf/vo8= root@buildkitsandbox</key-data>
+       </host-key>
+     </ssh>
+     <ssh-algorithms>
+       <public-key>ssh-ed25519</public-key>
+       <public-key>ssh-rsa</public-key>
+     </ssh-algorithms>
+     <state>
+       <admin-state>unlocked</admin-state>
+     </state>
+     <authgroup>default</authgroup>
+     <device-type>
+       <netconf>
+         <ned-id xmlns:router-nc-1.0="http://tail-f.com/ns/ned-id/router-nc-1.0">router-nc-1.0:router-nc-1.0</ned-id>
+       </netconf>
+     </device-type>
+   </device>
+   <device>
+     <name>ex2</name>
+     <address>192.168.0.6</address>
+     <port>12022</port>
+     <ssh>
+       <host-key>
+         <algorithm>ssh-ed25519</algorithm>
+         <key-data>ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMyNOWjiwKrFszyTSX7ZoTpKQrGqRTyPlmIwTwN2t/+F root@buildkitsandbox</key-data>
+       </host-key>
+       <host-key>
+         <algorithm>ssh-rsa</algorithm>
+         <key-data>ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCdB8Na07lbhJYRtSKCRtttU2guep8vbPmC5+1o8pEsvvIDCmbCCYfy2v/CmcU8fcX3PF5Ys8R+cSmDXMY28nNkxlNhO4rt8ph45g/iPLJ5grVcVuR94qYyWD+ukiqug2YqIEXpzDc0cnun31WHkFOePCiEZIdPZWW/PwsLqEKQNzCw6pOkiAXu+CUc7QXTI8onl2FYvsHPoQltv2NOzxttUFzuUUE0FvJ0m0Hj63reSLClUNB5jz7yhocROclrlpuWYQdMszRXfONVq0kyczvgi8KWLf7G+El6zNpbzVNb+dnKnq9MY8VqTbwVIDzJ7Gv5t2txW0Y2/PkuHy2vj+BDpe7a7pD2p9j05DFGqQQPAh8fS5vW5oZqh0JrgbRG/CciTfx7diuP+8OZcg/8rgbtkrn0NJVL99zMAc0YajtMJwAgNHcVbW/NVY4SjouxSZ7IKUilFghDZRwSlormW6ip7T3ActQfT9OCrjVutVSaXPFftlbBxLmLGy8yhZf/vo8= root@buildkitsandbox</key-data>
+       </host-key>
+     </ssh>
+     <ssh-algorithms>
+       <public-key>ssh-ed25519</public-key>
+       <public-key>ssh-rsa</public-key>
+     </ssh-algorithms>
+     <state>
+       <admin-state>unlocked</admin-state>
+     </state>
+     <authgroup>default</authgroup>
+     <device-type>
+       <netconf>
+         <ned-id xmlns:router-nc-1.0="http://tail-f.com/ns/ned-id/router-nc-1.0">router-nc-1.0:router-nc-1.0</ned-id>
+       </netconf>
+     </device-type>
+   </device>
+</devices>

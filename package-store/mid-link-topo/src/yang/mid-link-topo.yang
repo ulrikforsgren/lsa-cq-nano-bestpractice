@@ -1,0 +1,186 @@
+module mid-link-topo {
+  namespace "http://com/example/mid-link-topo";
+  prefix mid-link-topo;
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  import tailf-kicker { prefix kicker; }
+  import tailf-common {
+    prefix tailf;
+  }
+  import tailf-ncs {
+    prefix ncs;
+  }
+  import top {
+    prefix top;
+  }
+
+
+  container actions {
+    tailf:action notify {
+      tailf:actionpoint mid-link-topo-notify;
+      input {
+        uses kicker:action-input-params;
+      }
+      output {
+      }
+    }
+  }
+
+  augment /ncs:services {
+    // This is shared among all mid-link services...
+    list mid-link-data {
+      config false;
+      tailf:cdb-oper {
+        tailf:persistent true;
+      }
+      key name;
+      leaf name {
+        type string;
+      }
+      list rfs-node {
+        key name;
+        leaf name {
+          type leafref {
+            path "/ncs:devices/ncs:device/ncs:name";
+          }
+        }
+        leaf ready {
+          type boolean;
+          default false;
+        }
+      }
+    }
+    list mid-link-topo {
+      description "Mid link nano service";
+
+      uses ncs:nano-plan-data;
+      uses ncs:service-data;
+      ncs:servicepoint mid-link-topo-servicepoint;
+
+      key name;
+      leaf name {
+        type string;
+      }
+
+      leaf unit {
+        type uint32;
+      }
+
+      leaf vid {
+        type uint32;
+      }
+
+      leaf iface {
+        type string;
+      }
+
+      leaf sleep {
+        type int32;
+        default 0;
+      }
+
+      list device {
+        key name;
+        leaf name {
+          type leafref {
+            path "/top:rfs-devices/top:device/top:name";
+          }
+        }
+
+        leaf sleep {
+          type int32;
+          default 0;
+        }
+
+        leaf list-entries {
+          type int32;
+          default 0;
+        }
+      }
+    }
+  }
+
+  identity vlan-link {
+    base ncs:plan-component-type;
+  }
+  identity add-rfs-config {
+    base ncs:plan-state;
+  }
+
+  ncs:plan-outline mid-link-topo-plan {
+   ncs:self-as-service-status;
+    ncs:component-type "ncs:self" {
+      ncs:state "ncs:init"{
+        ncs:create {
+          ncs:nano-callback;
+        }
+        ncs:delete {
+          ncs:nano-callback;
+        }
+      }
+      ncs:state "ncs:ready"{
+        ncs:create {
+          ncs:nano-callback;
+        }
+        ncs:delete {
+          ncs:nano-callback;
+        }
+      }
+    }
+
+    ncs:component-type "mid-link-topo:vlan-link" {
+      ncs:state "ncs:init"{
+        ncs:create {
+          ncs:nano-callback;
+        }
+        ncs:delete {
+          ncs:pre-condition {
+            ncs:monitor "/ncs:services/mid-link-topo:mid-link-data[name=$SNAME]" {
+              ncs:trigger-expr "count(rfs-node[name=$RFSNAME]) = 0";
+            }
+          }
+        }
+      }
+      ncs:state "mid-link-topo:add-rfs-config"{
+        ncs:create {
+          ncs:nano-callback;
+        }
+      }
+      ncs:state "ncs:ready" {
+        ncs:create {
+          ncs:pre-condition {
+            ncs:monitor "/ncs:services/mid-link-topo:mid-link-data[name=$SERVICE/name]/rfs-node[name=$RFSNAME]" {
+              ncs:trigger-expr "ready = 'true'";
+            }
+          }
+        }
+      }
+    }
+  }
+
+  ncs:service-behavior-tree mid-link-topo-servicepoint {
+    ncs:plan-outline-ref mid-link-topo-plan;
+    ncs:selector {
+      ncs:create-component "'self'" {
+        ncs:component-type-ref "ncs:self";
+      }
+      ncs:variable "SNAME" {
+        ncs:value-expr "name";
+      }
+      ncs:multiplier {
+        ncs:foreach "device" {
+          ncs:variable "RFSNAME" {
+            //ncs:value-expr "deref(current())/../lower-node";
+            ncs:value-expr "/top:rfs-devices/device[name=current()/name]/lower-node";
+          }
+          ncs:create-component "/top:rfs-devices/device[name=current()/name]/lower-node" {
+            ncs:component-type-ref "mid-link-topo:vlan-link";
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,88 @@
+module top {
+
+  namespace "http://example.com/top";
+  prefix top;
+
+  import tailf-common {
+    prefix tailf;
+  }
+  import tailf-ncs {
+    prefix ncs;
+  }
+
+  description
+    "Top service package.";
+
+  revision 2021-10-13 {
+    description
+      "Initial revision.";
+  }
+
+  container resources-top {
+    description
+      "These are resources used by the top service to be able to manually
+       control services using reactive fastmap.";
+
+    leaf vid {
+      type uint16;
+      default 0;
+    }
+  }
+
+  container rfs-devices {
+    list device {
+      key name;
+      leaf name {
+        type string;
+      }
+      leaf lower-node {
+        mandatory true;
+        type leafref {
+          path "/ncs:cluster/ncs:remote-node/ncs:name";
+        }
+      }
+    }
+  }
+
+  list top {
+    description "This is a top service.";
+
+    key name;
+    leaf name {
+      tailf:info "Unique service id";
+      tailf:cli-allow-range;
+      type string;
+    }
+
+    uses ncs:service-data;
+    uses ncs:plan-data;
+    ncs:servicepoint top-servicepoint;
+
+/*
+  Direct access to devices not available from the CFS node.
+
+    leaf-list direct-devices {
+      type leafref {
+        path "/top:rfs-devices/top:device/top:name";
+      }
+    }
+*/
+    leaf-list stacked-devices {
+      type leafref {
+        path "/top:rfs-devices/top:device/top:name";
+      }
+    }
+
+    choice vlan-setting {
+      leaf vid {
+        type uint16;
+      }
+      leaf allocate-rm-vid {
+        type empty;
+      }
+      leaf use-resources-vid {
+        type empty;
+      }
+    }
+  }
+}

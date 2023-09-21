@@ -1,0 +1,21 @@
+<config xmlns="http://tail-f.com/ns/config/1.0">
+  <services xmlns="http://tail-f.com/ns/ncs">
+    <mid-link xmlns="http://com/example/mid-link">
+      <name>link1</name>
+      <unit>1</unit>
+      <vid>100</vid>
+      <rfs-node>
+        <name>lower-nso-1</name>
+        <devices>
+          <name>ex0</name>
+        </devices>
+      </rfs-node>
+      <rfs-node>
+        <name>lower-nso-2</name>
+        <devices>
+          <name>ex3</name>
+        </devices>
+      </rfs-node>
+    </mid-link>
+  </services>
+</config>

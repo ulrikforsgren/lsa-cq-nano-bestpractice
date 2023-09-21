@@ -1,0 +1,24 @@
+<config-template xmlns="http://tail-f.com/ns/config/1.0">
+  <devices xmlns="http://tail-f.com/ns/ncs">
+    <!-- Do this for the stacked devices -->
+    <?foreach {stacked-devices}?>
+    <device>
+      <name>{deref(current())/../lower-node}</name>
+      <config>
+
+        <services xmlns="http://tail-f.com/ns/ncs">
+          <vlan xmlns="http://com/example/rfsvlan">
+            <name>{current()}-{/name}</name>
+            <router>{current()}</router>
+            <iface>{$IFACE}</iface>
+            <unit>{$UNIT}</unit>
+            <vid>{$VID}</vid>
+            <description>Interface owned by top: {/name}</description>
+          </vlan>
+        </services>
+
+      </config>
+    </device>
+    <?end?>
+  </devices>
+</config-template>

@@ -1,0 +1,150 @@
+version: '3.2'
+
+services:
+  upper-nso:
+    image: "containers.cisco.com/uforsgre/nso-sys-install:${NSO_VERSION}-${NSO_CONTAINER_VERSION}"
+    privileged: true
+    user: root
+    hostname: nso
+    volumes:
+      - ./upper-nso:/root/nso-project
+    networks:
+      robustness:
+        ipv4_address: 172.30.0.3
+    extra_hosts:
+      - "cisshgo:192.168.0.3"
+    ports:
+      - 8080:8080
+
+  lower-nso-1:
+    image: "containers.cisco.com/uforsgre/nso-sys-install:${NSO_VERSION}-${NSO_CONTAINER_VERSION}"
+    privileged: true
+    user: root
+    hostname: lower-nso-1
+    volumes:
+      - ./lower-nso-1:/root/nso-project
+    networks:
+      robustness:
+        ipv4_address: 172.30.0.4
+    extra_hosts:
+      - "cisshgo:192.168.0.3"
+    ports:
+      - 8081:8080
+
+  lower-nso-2:
+    image: "containers.cisco.com/uforsgre/nso-sys-install:${NSO_VERSION}-${NSO_CONTAINER_VERSION}"
+    privileged: true
+    user: root
+    hostname: lower-nso-2
+    volumes:
+      - ./lower-nso-2:/root/nso-project
+    networks:
+      robustness:
+        ipv4_address: 172.30.0.5
+    extra_hosts:
+      - "cisshgo:192.168.0.3"
+    ports:
+      - 8082:8080
+
+  router:
+    image: "containers.cisco.com/uforsgre/router:${ROUTER_CONTAINER_VERSION}"
+    privileged: true
+    user: root
+    volumes:
+      - ./router:/root/project
+    hostname: router
+    networks:
+      robustness:
+        ipv4_address: 172.30.0.2
+      devices:
+        ipv4_address: 192.168.0.2
+
+  ex0:
+    image: "containers.cisco.com/uforsgre/netsim-router-sys:latest"
+    privileged: true
+    user: root
+    volumes:
+      - ./netsim-setup.sh:/setup.sh
+    command:
+      - "-n ex0"
+    hostname: ex0
+    networks:
+      devices:
+        ipv4_address: 192.168.0.4
+
+  ex1:
+    image: "containers.cisco.com/uforsgre/netsim-router-sys:latest"
+    privileged: true
+    user: root
+    volumes:
+      - ./netsim-setup.sh:/setup.sh
+    command:
+      - "-n ex1"
+    hostname: ex1
+    networks:
+      devices:
+        ipv4_address: 192.168.0.5
+
+  ex2:
+    image: "containers.cisco.com/uforsgre/netsim-router-sys:latest"
+    privileged: true
+    user: root
+    volumes:
+      - ./netsim-setup.sh:/setup.sh
+    command:
+      - "-n ex2"
+    hostname: ex2
+    networks:
+      devices:
+        ipv4_address: 192.168.0.6
+
+  ex3:
+    image: "containers.cisco.com/uforsgre/netsim-router-sys:latest"
+    privileged: true
+    user: root
+    volumes:
+      - ./netsim-setup.sh:/setup.sh
+    command:
+      - "-n ex3"
+    hostname: ex3
+    networks:
+      devices:
+        ipv4_address: 192.168.0.7
+
+  ex4:
+    image: "containers.cisco.com/uforsgre/netsim-router-sys:latest"
+    privileged: true
+    user: root
+    volumes:
+      - ./netsim-setup.sh:/setup.sh
+    command:
+      - "-n ex4"
+    hostname: ex4
+    networks:
+      devices:
+        ipv4_address: 192.168.0.8
+
+  ex5:
+    image: "containers.cisco.com/uforsgre/netsim-router-sys:latest"
+    privileged: true
+    user: root
+    volumes:
+      - ./netsim-setup.sh:/setup.sh
+    command:
+      - "-n ex5"
+    hostname: ex5
+    networks:
+      devices:
+        ipv4_address: 192.168.0.9
+
+networks:
+  robustness:
+    driver: bridge
+    ipam:
+      config:
+      - subnet: 172.30.0.0/16
+  devices:
+    driver: bridge
+    ipam:
+      config:
+      - subnet: 192.168.0.0/24
