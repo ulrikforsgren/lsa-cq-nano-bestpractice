@@ -7,7 +7,9 @@ import os
 import sys
 import time
 
+import aioconsole
 import aiohttp
+
 
 HEADERS_STREAM={
     'Content-Type':'application/json',
@@ -20,30 +22,6 @@ def add_authentication(h, user, password):
     h['Authorization'] = 'Basic %s' % b64encode(credentials).decode("ascii")
 
 
-
-async def get_stream(stream, host='localhost', port=8080,
-                     user='admin',
-                     password='admin'):
-    headers = HEADERS_STREAM.copy()
-    add_authentication(headers, user, password)
-    async with client.get(url, headers=headers) as response:
-        assert response.status == 200
-        s = ""
-        try:
-            async for line in response.content:
-                l = line.decode('utf-8').strip()
-                if l == "": # Assuming an emply lines is end of message
-                    o = json.loads(s)
-                    add_notification(f'{host}:{port}', stream, o)
-                    s = ""
-                else:
-                    assert(l[:6] == 'data: ')
-                    s += l[6:]
-        except Exception as s:
-            print(s)
-    await client.close()
-
-
 def get_client():
     conn = aiohttp.TCPConnector(limit=0) # No limit of parallel connections
     client = aiohttp.ClientSession(connector=conn)
@@ -52,6 +30,7 @@ def get_client():
 
 def dummy_logger(*a, **kwa):
     pass
+
 
 class JSONRPC:
     def __init__(self, host, user='admin', password='admin', client=None,
@@ -83,19 +62,20 @@ class JSONRPC:
         payload.update({"jsonrpc" : "2.0", "id" : await self.next_id()})
         if logging:
             await self.log(self.host, 'jsonrpc', 'request', data=payload)
-        try:
-            if logging:
+        try: # Fix no silent capture of exceptions
+            if logging and payload['method'] != 'comet':
                 await self.log(self.host, 'jsonrpc', 'request-cookies', data=self.client.cookies)
         except:
             pass
         async with self.client.post(self.baseurl, headers=self.headers, json=payload) as response:
             assert response.status == 200
-            #print("Cookies", response.cookies)
             # Handle Set-Cookie
             status = response.status
             jresp = await response.json()
             if logging:
-                await self.log(self.host, 'jsonrpc', 'response', status=status,
+                if payload['method'] != 'comet' or ('result' in jresp and
+                                                    len(jresp['result'])):
+                    await self.log(self.host, 'jsonrpc', 'response', status=status,
                                data=jresp)
             return status, jresp
 
@@ -199,7 +179,7 @@ class JSONRPC:
             payload['params'].update({"handle": handle})
         resp = await self.post(payload)
         return resp[1]['result']['handle']
- 
+
 
     async def start_subscription(self, handle):
         payload = {
@@ -223,12 +203,12 @@ async def main():
         await session.get_trans()
         th = await session.new_trans()
         value = await session.get_value(th, '/devices/global-settings/read-timeout')
-        print("value", value)
+        await aioconsole.aprint("value", value)
         handle = await session.subscribe_changes('main', '/ncs:services/mid-link:mid-link')
-        print("handle", handle)
+        await aioconsole.aprint("handle", handle)
         await session.start_subscription(handle)
         handle = await session.subscribe_cdboper('main', '/ncs:services/mid-link:mid-link-data')
-        print("handle", handle)
+        await aioconsole.aprint("handle", handle)
         await session.start_subscription(handle)
         await comet_channel(session, 'main')
     finally:

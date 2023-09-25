@@ -3,8 +3,11 @@
 import asyncio
 from base64 import b64encode
 import json
+import aioconsole
 import aiohttp
 from yarl import URL
+import sys
+
 
 HEADERS_JSON={
     'Accept':'application/yang-data+json',
@@ -118,6 +121,7 @@ class RESTCONF:
         async with self.client.get(url, headers=headers) as response:
             assert response.status == 200
             # TODO: Improve performance by using something better than a string?
+            # TODO: Handle errors
             s = ""
             try:
                 async for line in response.content:
@@ -127,8 +131,18 @@ class RESTCONF:
                         s = ""
                         await self.log(self.host, 'restconf', 'stream', rid=rid,
                                         stream=stream, data=o)
-                    else:
-                        assert(l[:6] == 'data: ')
+                    elif l[:6] == 'data: ':
                         s += l[6:]
+                    elif l[:9] == ': error :':
+                        await self.log(self.host, 'restconf', 'stream', rid=rid,
+                                        stream=stream, data=l)
+                    else:
+                        await aioconsole.aprint("UNHANDLED", self.host,
+                                                response.status, l)
             except Exception as s:
-                print(s)
+                await aioconsole.aprint(
+                        f"EXCEPTION: {s}\n"+
+                        f"s= {s}\n"+
+                        f"l= {l}"
+                        )
+                sys.exit(1)

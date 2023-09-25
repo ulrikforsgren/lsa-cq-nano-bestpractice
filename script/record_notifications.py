@@ -11,6 +11,7 @@ import sys
 import jsonrpc_api
 import restconf_api
 
+import aioconsole
 
 def parseArgs(args):
     parser = argparse.ArgumentParser()
@@ -92,7 +93,7 @@ async def logger(q, log_console=True, log_file=False, log_format='csv',
     while True:
         msg = await q.get()
         if log_console:
-            print(msg)
+            await aioconsole.aprint(msg)
         if log_file and f:
             writer(msg)
         q.task_done()
