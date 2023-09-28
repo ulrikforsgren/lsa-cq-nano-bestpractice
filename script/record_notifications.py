@@ -37,7 +37,9 @@ async def get_subscriptions(jsonrpc):
     await jsonrpc.login()
     await setup_subscriptions(jsonrpc, [
         ('config', '/ncs:services'),
-        ('oper', '/ncs:services')
+        ('oper', '/ncs:services'),
+        ('oper', '/ncs:devices/commit-queue/qitem'),
+        ('oper', '/ncs:devices/commit-queue/completed/queue-item')
         ])
     while True:
         await jsonrpc.comet('main')

@@ -89,7 +89,7 @@ class RESTCONF:
                 data=data.encode('utf-8')
             elif jdata is not None:
                 await self.log(self.host, 'restconf', 'request', rid=rid,
-                                method=method, url=url, data=jdata)
+                                method=method, url=url, data=json.dumps(jdata))
             else:
                 await self.log(self.host, 'restconf', 'request', rid=rid,
                                 method=method, url=url)
@@ -99,7 +99,8 @@ class RESTCONF:
                     data = None # No content is expected.
                 else:
                     if response.headers['Content-Type'] == 'application/yang-data+json':
-                        data = await response.json()
+                        #data = await response.json()
+                        data = await response.text()
                     else:
                         data = await response.text()
                 await self.log(self.host, 'restconf', 'response',
@@ -121,19 +122,23 @@ class RESTCONF:
         async with self.client.get(url, headers=headers) as response:
             assert response.status == 200
             # TODO: Improve performance by using something better than a string?
-            # TODO: Handle errors
+            # TODO: Decode event according to standard:
+            #       https://html.spec.whatwg.org/multipage/server-sent-events.html#parsing-an-event-stream
+            #       section 9.2.6
             s = ""
             try:
                 async for line in response.content:
                     l = line.decode('utf-8').strip()
                     if l == "": # Assuming an emply lines is end of message
-                        o = json.loads(s)
+                        o =  s# json.loads(s)
                         s = ""
                         await self.log(self.host, 'restconf', 'stream', rid=rid,
                                         stream=stream, data=o)
                     elif l[:6] == 'data: ':
                         s += l[6:]
-                    elif l[:9] == ': error :':
+                    elif l[:1] == ':': # To catch ': error :':
+                        # NSO may report device-notifications temporarily
+                        # unavailable
                         await self.log(self.host, 'restconf', 'stream', rid=rid,
                                         stream=stream, data=l)
                     else:

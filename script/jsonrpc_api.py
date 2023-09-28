@@ -60,8 +60,9 @@ class JSONRPC:
 
     async def post(self, payload, logging=True):
         payload.update({"jsonrpc" : "2.0", "id" : await self.next_id()})
-        if logging:
-            await self.log(self.host, 'jsonrpc', 'request', data=payload)
+        if logging and payload['method'] != 'comet':
+            await self.log(self.host, 'jsonrpc', 'request',
+                           data=json.dumps(payload))
         try: # Fix no silent capture of exceptions
             if logging and payload['method'] != 'comet':
                 await self.log(self.host, 'jsonrpc', 'request-cookies', data=self.client.cookies)
@@ -76,7 +77,7 @@ class JSONRPC:
                 if payload['method'] != 'comet' or ('result' in jresp and
                                                     len(jresp['result'])):
                     await self.log(self.host, 'jsonrpc', 'response', status=status,
-                               data=jresp)
+                               data=json.dumps(jresp))
             return status, jresp
 
     async def login(self):
