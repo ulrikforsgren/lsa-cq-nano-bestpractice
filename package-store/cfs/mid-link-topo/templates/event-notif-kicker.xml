@@ -1,0 +1,11 @@
+<config-template xmlns="http://tail-f.com/ns/config/1.0">
+    <kickers xmlns="http://tail-f.com/ns/kicker">
+        <notification-kicker xmlns="http://tail-f.com/ns/ncs-kicker">
+            <id>event-notif-kicker</id>
+            <serializer>111</serializer>
+            <selector-expr>$SUBSCRIPTION_NAME='events'</selector-expr>
+            <kick-node xmlns:mid-link-topo="http://com/example/mid-link-topo">/mid-link-topo:actions</kick-node>
+            <action-name>event-notify</action-name>
+        </notification-kicker>
+    </kickers>
+</config-template>

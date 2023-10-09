@@ -30,7 +30,9 @@ request ncs:devices sync-from
 EOF
 docker-compose exec -T lower-nso-1 bash -l -c "ncs_cli -u admin" <<EOF
 config
-set services plan-notifications subscription service-sub service-type /ncs:services/lower-link:lower-link component-type self
+set services plan-notifications subscription service-sub service-type /ncs:services/lower-link:lower-link component-type vlan-link
+set services commit-queue-notifications subscription ll-cq-notifs service-type /ncs:services/lower-link:lower-link
+set devices global-settings commit-queue enabled-by-default true
 commit
 EOF
 
@@ -42,7 +44,9 @@ request ncs:devices sync-from
 EOF
 docker-compose exec -T lower-nso-2 bash -l -c "ncs_cli -u admin" <<EOF
 config
-set services plan-notifications subscription service-sub service-type /ncs:services/lower-link:lower-link component-type self
+set services plan-notifications subscription service-sub service-type /ncs:services/lower-link:lower-link component-type vlan-link
+set services commit-queue-notifications subscription ll-cq-notifs service-type /ncs:services/lower-link:lower-link
+set devices global-settings commit-queue enabled-by-default true
 commit
 EOF
 
@@ -74,17 +78,26 @@ set ncs:devices device lower-nso-1 authgroup default
 set ncs:devices device lower-nso-1 lsa-remote-node lower-nso-1
 set ncs:devices device lower-nso-1 state admin-state unlocked
 set ncs:devices device lower-nso-1 out-of-sync-commit-behaviour accept
+set ncs:devices device lower-nso-1 trace pretty
 set ncs:devices device lower-nso-2 device-type netconf ned-id $NEDID
 set ncs:devices device lower-nso-2 authgroup default
 set ncs:devices device lower-nso-2 lsa-remote-node lower-nso-2
 set ncs:devices device lower-nso-2 state admin-state unlocked
 set ncs:devices device lower-nso-2 out-of-sync-commit-behaviour accept
+set ncs:devices device lower-nso-2 trace pretty
 commit
 exit
 EOF
 docker-compose exec -T upper-nso bash -l -c "ncs_cli -u admin" <<EOF
+request ncs:devices fetch-ssh-host-keys
+request ncs:devices sync-from
+exit
+EOF
+docker-compose exec -T upper-nso bash -l -c "ncs_cli -u admin" <<EOF
 config
+set ncs:devices device lower-nso-1 netconf-notifications subscription events stream ncs-events local-user admin
 set ncs:devices device lower-nso-1 netconf-notifications subscription three-layer-service-sub stream service-state-changes local-user admin
+set ncs:devices device lower-nso-2 netconf-notifications subscription events stream ncs-events local-user admin
 set ncs:devices device lower-nso-2 netconf-notifications subscription three-layer-service-sub stream service-state-changes local-user admin
 set services plan-notifications subscription service-sub service-type /ncs:services/mid-link:mid-link component-type self
 commit
@@ -95,10 +108,5 @@ set top:rfs-devices device ex3 lower-node lower-nso-2
 set top:rfs-devices device ex4 lower-node lower-nso-2
 set top:rfs-devices device ex5 lower-node lower-nso-2
 commit
-exit
-EOF
-docker-compose exec -T upper-nso bash -l -c "ncs_cli -u admin" <<EOF
-request ncs:devices fetch-ssh-host-keys
-request ncs:devices sync-from
 exit
 EOF

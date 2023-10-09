@@ -1,0 +1,72 @@
+module top {
+
+  namespace "http://example.com/top";
+  prefix top;
+
+  import tailf-common {
+    prefix tailf;
+  }
+  import tailf-ncs {
+    prefix ncs;
+  }
+
+  description
+    "Top service package.";
+
+  revision 2021-03-30 {
+    description
+      "Initial revision.";
+  }
+
+  container resources-top {
+    description
+      "These are resources used by the top service to be able to manually
+       control services using reactive fastmap.";
+
+    leaf vid {
+      type uint16;
+      default 0;
+    }
+  }
+
+  augment "/ncs:services" {
+    list top {
+      description "This is a top service.";
+
+      key name;
+      leaf name {
+        tailf:info "Unique service id";
+        tailf:cli-allow-range;
+        type string;
+      }
+
+      uses ncs:service-data;
+      uses ncs:plan-data;
+      ncs:servicepoint top-servicepoint;
+
+      leaf-list direct-devices {
+        type leafref {
+          path "/ncs:devices/ncs:device/ncs:name";
+        }
+      }
+
+      leaf-list stacked-devices {
+        type leafref {
+          path "/ncs:devices/ncs:device/ncs:name";
+        }
+      }
+
+      choice vlan-setting {
+        leaf vid {
+          type uint16;
+        }
+        leaf allocate-rm-vid {
+          type empty;
+        }
+        leaf use-resources-vid {
+          type empty;
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,25 @@
+<config-template xmlns="http://tail-f.com/ns/config/1.0">
+  <devices xmlns="http://tail-f.com/ns/ncs">
+    <?foreach {direct-devices}?>
+      <device>
+        <name>{current()}</name>
+        <config>
+          <sys xmlns="http://example.com/router">
+            <interfaces>
+              <interface>
+                <name>{$IFACE}</name>
+                <enabled/>
+                <unit>
+                  <name>{$UNIT}</name>
+                  <enabled>true</enabled>
+                  <description>Interface owned by top: {/name}</description>
+                  <vlan-id>{$VID}</vlan-id>
+                </unit>
+              </interface>
+            </interfaces>
+          </sys>
+        </config>
+      </device>
+    <?end?>
+  </devices>
+</config-template>

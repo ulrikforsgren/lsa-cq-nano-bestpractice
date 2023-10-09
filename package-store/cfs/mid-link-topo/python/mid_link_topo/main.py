@@ -1,47 +1,51 @@
 # -*- mode: python; python-indent: 4 -*-
 import ncs
-from ncs.maapi import Maapi
-from ncs.application import NanoService
-from ncs.dp import Action
+import _ncs
+from ncs.application import NanoService, Service
 import time
+from .notif_actions import PlanNotificationAction, EventNotficationAction
 
+class MidLinkServiceCallbacks(Service):
+    @Service.pre_modification
+    def cb_pre_modification(self, tctx, op, kp, root, proplist):
+        if op == _ncs.dp.NCS_SERVICE_CREATE:
+            service_name = self.kp_to_svc_name(kp)
+            self.log.debug(f'Creating mid-link-data {service_name}')
+            root.ncs__services.mid_link_topo__mid_link_data.create(service_name)
 
+    @Service.post_modification
+    def cb_post_modification(self, tctx, op, kp, root, proplist):
+        if op == _ncs.dp.NCS_SERVICE_DELETE:
+            service_name = self.kp_to_svc_name(kp)
+            link_data = root.ncs__services.mid_link_topo__mid_link_data[service_name]
+            all_unprovisioned = True
+            for d in link_data.devices:
+                if d.status != 'unprovisioned':
+                    all_unprovisioned = False
+            
+            if all_unprovisioned:
+                self.log.debug(f'Removing mid-link-data {service_name}')
+                del root.ncs__services.mid_link_topo__mid_link_data[service_name]
+
+    def kp_to_svc_name(self, kp):
+        return str(kp).split('{')[1].split('}')[0]
+    
 class CreateKickers(NanoService):
     @NanoService.create
     def cb_nano_create(self, tctx, root, service, plan, component, state, proplist, compproplist):
-        self.log.info("Creating notification-kicker for create...")
-        notif_kicker = root.kicker__kickers.ncs_kicker__notification_kicker.create(f"{service.name}-create-notif-kicker")
-        notif_kicker.action_name = "notify"
-        notif_kicker.kick_node = "/mid-link-topo:actions"
-        notif_kicker.selector_expr = "$SUBSCRIPTION_NAME='three-layer-service-sub' and service=$NAME and operation='modified' and status='reached' and state='ready' and component='self'"
-        notif_var = notif_kicker.variable.create("NAME")
-        notif_var.value = f"\"/ncs:services/lower-link:lower-link[lower-link:name='{service.name}']\""
-
-        self.log.info("Creating notification-kicker for delete...")
-        delete_notif_kicker = root.kicker__kickers.ncs_kicker__notification_kicker.create(f"{service.name}-delete-notif-kicker")
-        delete_notif_kicker.action_name = "notify"
-        delete_notif_kicker.kick_node = "/mid-link-topo:actions"
-        delete_notif_kicker.selector_expr = "$SUBSCRIPTION_NAME='three-layer-service-sub' and service=$NAME and operation='deleted' and state='init' and component='self'"
-        delete_notif_var = delete_notif_kicker.variable.create("NAME")
-        delete_notif_var.value = f"\"/ncs:services/lower-link:lower-link[lower-link:name='{service.name}']\""
-
+        vars = ncs.template.Variables()
+        vars.add('SERVICE_NAME', service.name)
+        template = ncs.template.Template(service)
+        template.apply('plan-notif-kicker-create', vars)
+        template.apply('plan-notif-kicker-delete', vars)
+        template.apply('service-commit-queue-event-notif-kicker', vars)
+        template.apply('event-notif-kicker', vars)
 
 class MidLinkNanoServiceCallbacks(NanoService):
     @NanoService.create
     def cb_nano_create(self, tctx, root, service, plan, component, state, proplist, compproplist):
         self.log.info(f'Mid Link Nano service CB: {service.name} - {component} - {state} ')
-        #for rfs in service.rfs_node:
-        #    self.log.info(f"Creating service for RFS='{rfs.name}'")
-        #    rfs_device = root.ncs__devices.device[rfs.name]
-        #    link = rfs_device.config.services.lower_link.create(service.name)
-        #    for device in rfs.devices:
-        #        link_device = link.devices.create(device.name)
-        #        link_device.list_entries = device.list_entries
 
-        #    link.vid = service.vid
-        #    link.unit = service.unit
-        #    link.iface = service.iface
-        #    link.sleep = rfs.sleep
         for d in service.device:
             self.log.info(f'd={d.name}')
             rfsname = root.top__rfs_devices.device[d.name].lower_node
@@ -78,46 +82,6 @@ class NanoServiceCallbackReady(NanoService):
     def cb_nano_delete(self, tctx, root, service, plan, component, state, proplist, compproplist):
         self.log.info(f'Deleting Mid-link...')
 
-
-class NotificationAction(Action):
-    @Action.action
-    def cb_action(self, uinfo, name, kp, input, output, trans):
-        if hasattr(Maapi, "run_with_retry"):
-            def wrapped_do_action(trans):
-                return self.do_action(trans, input)
-            with ncs.maapi.Maapi() as m:
-                with ncs.maapi.Session(m, 'admin', 'system'):
-                    m.run_with_retry(wrapped_do_action)
-        else:
-            with ncs.maapi.single_write_trans('admin', 'system') as t:
-                self.do_action(t, input)
-                t.apply()
-
-    def do_action(self, t, input):
-        try:
-            import re
-            root = ncs.maagic.get_root(t)
-            self.log.info(f'path={input.path}')
-            device_name = re.search(r'\{(.*?)\}', input.path).group(1)
-            self.log.info(f'device_name={device_name}')
-            notification = root._get_node(input.path)
-            # TODO: Optimal?
-            service_name = re.search(r"('[^#]*')", notification.service).group().replace("'", "")
-            if notification.operation == 'modified':
-                self.log.info(f"Adding mid link data for '{service_name}'...")
-                link_data = root.ncs__services.mid_link_topo__mid_link_data.create(service_name)
-                link_data_device = link_data.rfs_node.create(device_name)
-                link_data_device.ready = True
-            elif notification.operation == 'deleted':
-                self.log.info(f"Removing mid link data for '{service_name}'...")
-                del root.ncs__services.mid_link_topo__mid_link_data[service_name].rfs_node[device_name]
-            params = t.get_params()
-            params.dry_run_native()
-            return True
-        except Exception as e:
-            return False
-
-
 # ---------------------------------------------
 # COMPONENT THREAD THAT WILL BE STARTED BY NCS.
 # ---------------------------------------------
@@ -130,6 +94,7 @@ class Main(ncs.application.Application):
         # Service callbacks require a registration for a 'service point',
         # as specified in the corresponding data model.
         #
+        self.register_service('mid-link-topo-servicepoint', MidLinkServiceCallbacks) 
         self.register_nano_service(servicepoint='mid-link-topo-servicepoint',
                                    componenttype="mid-link-topo:vlan-link", state="ncs:init", nano_service_cls=CreateKickers)
         self.register_nano_service(servicepoint='mid-link-topo-servicepoint',
@@ -139,7 +104,8 @@ class Main(ncs.application.Application):
         self.register_nano_service(servicepoint='mid-link-topo-servicepoint', componenttype="ncs:self", state="ncs:init", nano_service_cls=NanoServiceCallbackInit)
         self.register_nano_service(servicepoint='mid-link-topo-servicepoint', componenttype="ncs:self", state="ncs:ready", nano_service_cls=NanoServiceCallbackReady)
 
-        self.register_action('mid-link-topo-notify', NotificationAction)
+        self.register_action('mid-link-topo-notify', PlanNotificationAction)
+        self.register_action('mid-link-topo-event-notify', EventNotficationAction)
         # If we registered any callback(s) above, the Application class
         # took care of creating a daemon (related to the service/action point).
 

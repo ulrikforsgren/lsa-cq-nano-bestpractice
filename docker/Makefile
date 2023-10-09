@@ -2,18 +2,8 @@ ifeq "$(NCS_DIR)" ""
 $(error NCS_DIR is not setup. Source ncsrc to setup NSO environment before proceeding)
 endif
 
-CFS_PACKAGES =  resource-manager \
-		cfs-top \
-		mid-link \
-		mid-link-topo \
-		$(LSA_NED) \
-		rfs-vlan-nc \
-		lower-link-nc
-
-RFS_PACKAGES =  rfs-vlan \
-		lower-link \
-                router
-
+CFS_PACKAGES =  $(wildcard ../package-store/cfs/*)
+RFS_PACKAGES =  $(wildcard ../package-store/rfs/*)
 
 NSO_VERSION = $(shell ncs --version)
 NSO_VER_MAJ = $(shell echo $(NSO_VERSION) | cut -f1 -d.)
@@ -69,26 +59,26 @@ LSA-BUILD:
 	@touch LSA-BUILD
 
 .PHONY: build-pkgs
-build-pkgs: ../package-store/BUILT ../package-store/rfs-vlan-nc ../package-store/lower-link-nc ../package-store/$(LSA_NED)
+build-pkgs: ../package-store/BUILT ../package-store/cfs/rfs-vlan-nc ../package-store/cfs/lower-link-nc ../package-store/cfs/$(LSA_NED)
 ../package-store/BUILT:
-	for i in $(shell find ../package-store -type d -maxdepth 1 -mindepth 1); do \
+	for i in $(CFS_PACKAGES) $(RFS_PACKAGES); do \
 	  $(MAKE) -C $${i}/src all || exit 1; \
 	done
 	touch ../package-store/BUILT
 
-../package-store/$(LSA_NED):
-	cp -rp ${NCS_DIR}/packages/lsa/$(LSA_NED) ../package-store/.
+../package-store/cfs/$(LSA_NED):
+	cp -rp ${NCS_DIR}/packages/lsa/$(LSA_NED) ../package-store/cfs/.
 
-../package-store/rfs-vlan-nc:
+../package-store/cfs/rfs-vlan-nc:
 	ncs-make-package --no-netsim --no-java --no-python \
-		--lsa-netconf-ned ../package-store/rfs-vlan/src/yang \
+		--lsa-netconf-ned ../package-store/rfs/rfs-vlan/src/yang \
 		--lsa-lower-nso cisco-nso-nc-$(NSO_MAJOR_VERSION) \
 		--package-version $(NSO_MAJOR_VERSION) --dest $@ $(@F)
 	$(MAKE) -C $@/src
 
-../package-store/lower-link-nc:
+../package-store/cfs/lower-link-nc:
 	ncs-make-package --no-netsim --no-java --no-python \
-		--lsa-netconf-ned ../package-store/lower-link/src/yang \
+		--lsa-netconf-ned ../package-store/rfs/lower-link/src/yang \
 		--lsa-lower-nso cisco-nso-nc-$(NSO_MAJOR_VERSION) \
 		--package-version $(NSO_MAJOR_VERSION) --dest $@ $(@F)
 	$(MAKE) -C $@/src
@@ -100,27 +90,30 @@ build-pkgs: ../package-store/BUILT ../package-store/rfs-vlan-nc ../package-store
 
 upper-nso: build-pkgs
 	cp -rp node-template $@
-	for i in $(CFS_PACKAGES); do \
-	  cp -rp ../package-store/$${i} $@/var/packages/.; \
-	done
 
 lower-nso-%: build-pkgs
 	cp -rp node-template $@
 	cp initial_data/devices-$@.xml $@/var/cdb/.
-	for i in $(RFS_PACKAGES); do \
-	  cp -rp ../package-store/$${i} $@/var/packages/.; \
-	done
-
 
 .PHONY: clean
 clean:
 	rm -rf upper-nso lower-nso-1 lower-nso-2
 	rm -f LSA-BUILD
+	rm -rf ../package-store/cfs/rfs-vlan-nc
+	rm -rf ../package-store/cfs/lower-link-nc
+	rm -rf ../package-store/cfs/$(LSA_NED)
 
+.PHONY: clean-pkgs
+clean-pkgs:
+	for i in $(CFS_PACKAGES) $(RFS_PACKAGES); do \
+	  $(MAKE) -C $${i}/src clean || exit 1; \
+	done
+	rm -f ../package-store/BUILT
 
 .PHONY: start
 start: check-build
 	docker-compose up
+	./initial_data/startup-lsa-docker-compose.sh
 
 
 .PHONY: stop

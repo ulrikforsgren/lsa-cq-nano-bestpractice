@@ -1,20 +1,24 @@
 <ncs-package xmlns="http://tail-f.com/ns/ncs-packages">
-  <name>mid-link-topo</name>
+  <name>top</name>
   <package-version>1.0</package-version>
   <description>Generated Python package</description>
-  <ncs-min-version>5.7</ncs-min-version>
+  <ncs-min-version>5.2</ncs-min-version>
 
   <required-package>
-    <name>lower-link-nc</name>
+    <name>resource-manager</name>
   </required-package>
   <required-package>
-    <name>top</name>
+    <name>rfs-vlan</name>
   </required-package>
+  <required-package>
+    <name>router-nc-1.0</name>
+  </required-package>
+
 
   <component>
     <name>main</name>
     <application>
-      <python-class-name>mid_link_topo.main.Main</python-class-name>
+      <python-class-name>top.main.Main</python-class-name>
     </application>
   </component>
 </ncs-package>

@@ -5,6 +5,9 @@ module mid-link-topo {
   import ietf-inet-types {
     prefix inet;
   }
+  import ietf-yang-types {
+    prefix yang;
+  }
 
   import tailf-kicker { prefix kicker; }
   import tailf-common {
@@ -17,10 +20,17 @@ module mid-link-topo {
     prefix top;
   }
 
-
   container actions {
     tailf:action notify {
       tailf:actionpoint mid-link-topo-notify;
+      input {
+        uses kicker:action-input-params;
+      }
+      output {
+      }
+    }
+    tailf:action event-notify {
+      tailf:actionpoint mid-link-topo-event-notify;
       input {
         uses kicker:action-input-params;
       }
@@ -40,16 +50,29 @@ module mid-link-topo {
       leaf name {
         type string;
       }
-      list rfs-node {
+
+      list devices {
         key name;
         leaf name {
           type leafref {
-            path "/ncs:devices/ncs:device/ncs:name";
+            path "/top:rfs-devices/top:device/top:name";
           }
         }
-        leaf ready {
+
+        leaf status {
+          type string; // Enum?
+        }
+        leaf transient-error {
           type boolean;
-          default false;
+        }
+        leaf when {
+          type yang:date-and-time;
+        }
+        leaf reason {
+          type string;
+        }
+        leaf retries {
+          type uint32;
         }
       }
     }
@@ -138,8 +161,8 @@ module mid-link-topo {
         }
         ncs:delete {
           ncs:pre-condition {
-            ncs:monitor "/ncs:services/mid-link-topo:mid-link-data[name=$SNAME]" {
-              ncs:trigger-expr "count(rfs-node[name=$RFSNAME]) = 0";
+            ncs:monitor "/ncs:services/mid-link-topo:mid-link-data[name=$SNAME]/devices[name=$DEVICENAME]" {
+              ncs:trigger-expr "status = 'unprovisioned'";
             }
           }
         }
@@ -152,8 +175,8 @@ module mid-link-topo {
       ncs:state "ncs:ready" {
         ncs:create {
           ncs:pre-condition {
-            ncs:monitor "/ncs:services/mid-link-topo:mid-link-data[name=$SERVICE/name]/rfs-node[name=$RFSNAME]" {
-              ncs:trigger-expr "ready = 'true'";
+            ncs:monitor "/ncs:services/mid-link-topo:mid-link-data[name=$SNAME]/devices[name=$DEVICENAME]" {
+              ncs:trigger-expr "status = 'completed'";
             }
           }
         }
@@ -175,6 +198,9 @@ module mid-link-topo {
           ncs:variable "RFSNAME" {
             //ncs:value-expr "deref(current())/../lower-node";
             ncs:value-expr "/top:rfs-devices/device[name=current()/name]/lower-node";
+          }
+          ncs:variable "DEVICENAME" {
+            ncs:value-expr "name";
           }
           ncs:create-component "/top:rfs-devices/device[name=current()/name]/lower-node" {
             ncs:component-type-ref "mid-link-topo:vlan-link";

@@ -1,0 +1,4 @@
+__pycache__
+package-store/cfs/cisco-nso-nc-*
+package-store/cfs/rfs-vlan-nc
+package-store/cfs/lower-link-nc

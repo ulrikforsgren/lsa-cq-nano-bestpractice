@@ -1,0 +1,15 @@
+<config-template xmlns="http://tail-f.com/ns/config/1.0">
+    <kickers xmlns="http://tail-f.com/ns/kicker">
+        <notification-kicker xmlns="http://tail-f.com/ns/ncs-kicker">
+            <id>{$SERVICE_NAME}-create-notif-kicker</id>
+            <serializer>111</serializer>
+            <selector-expr>$SUBSCRIPTION_NAME='three-layer-service-sub' and service=$NAME and status='reached'</selector-expr>
+            <variable>
+                <name>NAME</name>
+                <value>"/ncs:services/lower-link:lower-link[lower-link:name='{$SERVICE_NAME}']"</value>
+            </variable>
+            <kick-node xmlns:mid-link-topo="http://com/example/mid-link-topo">/mid-link-topo:actions</kick-node>
+            <action-name>notify</action-name>
+        </notification-kicker>
+    </kickers>
+</config-template>
